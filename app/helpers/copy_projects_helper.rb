@@ -1,0 +1,2 @@
+module CopyProjectsHelper
+end

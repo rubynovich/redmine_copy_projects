@@ -1,0 +1,69 @@
+- roles = Role.find_all_givable
+- projects = Project.active.all
+
+%form{:action => url_for(:controller => :copy_projects, :action => :copy_projects), :method => :post}
+  %p
+    = t(:label_project_plural)
+    = hidden_field_tag 'user_to', @user.id
+    %select{:id => 'user_from', :name => 'user_from', :class => "small"}
+      %option
+      - User.active.all(:order => "lastname, firstname").each do |user|
+        - if @user == user
+          %option{:value => user.id, :selected => "selected"}
+            = user.name
+        - else
+          %option{:value => user.id}
+            = user.name
+    = submit_tag l(:button_copy), :class => "small", :name => nil
+
+.splitcontentleft
+  - if @user.memberships.any?
+    %table.list.memberships
+      %thead
+        %tr
+          %th= l(:label_project)
+          %th= l(:label_role_plural)
+          %th{:style=>"width:15%"}
+          = call_hook(:view_users_memberships_table_header, :user => @user )
+      %tbody
+        - @user.memberships.each do |membership|
+          - next if membership.new_record?
+          %tr{:id=>"member-#{membership.id}", :class=>"#{cycle 'odd', 'even'} class"}
+            %td.project
+              = link_to_project membership.project
+            %td.roles
+              %span{:id=>"member-#{membership.id}-roles"}
+                =h membership.roles.sort.collect(&:to_s).join(', ')
+              = form_for(:membership, :remote => true, :url => user_membership_path(@user, membership), :method => :put, :html => {:id => "member-#{membership.id}-roles-form", :style => 'display:none;'}) do
+                %p
+                  - roles.each do |role|
+                    %label
+                      = check_box_tag 'membership[role_ids][]', role.id, membership.roles.include?(role), :disabled => membership.member_roles.detect {|mr| mr.role_id == role.id && !mr.inherited_from.nil?}
+                      =h role
+                    %br
+                = hidden_field_tag 'membership[role_ids][]', ''
+                %p
+                  = submit_tag l(:button_change)
+                  = link_to_function l(:button_cancel), "$('#member-#{membership.id}-roles').show(); $('#member-#{membership.id}-roles-form').hide(); return false;"
+
+            %td.buttons
+              = link_to_function l(:button_edit), "$('#member-#{membership.id}-roles').hide(); $('#member-#{membership.id}-roles-form').show(); return false;", :class => 'icon icon-edit'
+              = delete_link user_membership_path(@user, membership), :remote => true if membership.deletable?
+          = call_hook(:view_users_memberships_table_row, :user => @user, :membership => membership, :roles => roles, :projects => projects )
+        - reset_cycle
+  - else
+    %p.nodata= l(:label_no_data)
+
+.splitcontentright
+  - if projects.any?
+    %fieldset
+      %legend=l(:label_project_new)
+      = form_for(:membership, :remote => true, :url => user_memberships_path(@user)) do
+        = select_tag 'membership[project_id]', options_for_membership_project_select(@user, projects)
+        %p
+          = l(:label_role_plural)+":"
+          - roles.each do |role|
+            %label
+              = check_box_tag 'membership[role_ids][]', role.id
+              =h role
+        %p= submit_tag l(:button_add)
