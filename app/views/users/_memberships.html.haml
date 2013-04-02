@@ -1,7 +1,7 @@
 - roles = Role.find_all_givable
 - projects = Project.active.all
 
-%form{:action => url_for(:controller => :copy_projects, :action => :copy_projects), :method => :get}
+%form{:action => url_for(:controller => :copy_projects, :action => :run), :method => :get}
   %p
     = t(:label_project_plural)
     = hidden_field_tag 'user_to', @user.id

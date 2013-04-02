@@ -4,7 +4,7 @@ class CopyProjectsController < ApplicationController
   before_filter :require_admin
   before_filter :find_user
 
-  def copy_projects
+  def run
     Member.transaction do
       @user_from.memberships.each do |m|
         member = Member.new(:user => @user, :project => m.project)
