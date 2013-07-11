@@ -1,0 +1,60 @@
+- roles = Role.find_all_givable
+- projects = Project.active.all
+
+%form{:action => url_for(:controller => :copy_projects, :action => :run), :method => :get}
+  %p
+    = t(:label_project_plural)
+    = hidden_field_tag 'user_to', @group.id
+    = select_tag("user_from", principals_options_for_select(Principal.active, @group), :prompt => t(:prompt_please_select))
+    = submit_tag l(:button_copy), :class => "small", :name => nil
+
+.splitcontentleft
+  - if @group.memberships.any?
+    %table.list.memberships
+      %thead
+        %tr
+          %th= l(:label_project)
+          %th= l(:label_role_plural)
+          %th{:style=>"width:15%"}= link_to l(:label_delete), controller: :copy_projects, action: :clear_all, id: @group
+      %tbody
+        - @group.memberships.each do |membership|
+          - next if membership.new_record?
+          %tr{id: "member-#{membership.id}", class: "#{cycle 'odd', 'even'} class"}
+            %td.project
+              = link_to_project membership.project
+            %td.roles
+              %span{id: "member-#{membership.id}-roles"}
+                =h membership.roles.sort.collect(&:to_s).join(', ')
+              = form_for(:membership, :remote => true, :url => { :action => 'edit_membership', :id => @group, :membership_id => membership }, :html => { :id => "member-#{membership.id}-roles-form", :style => 'display:none;'}) do
+                %p
+                  - roles.each do |role|
+                    %label
+                      = check_box_tag 'membership[role_ids][]', role.id, membership.roles.include?(role)
+                      =h role
+                    %br
+                %p
+                  = submit_tag l(:button_change)
+                  = link_to_function(l(:button_cancel), "$('#member-#{membership.id}-roles').show(); $('#member-#{membership.id}-roles-form').hide(); return false;")
+            %td.buttons
+              = link_to_function(l(:button_edit),"$('#member-#{membership.id}-roles').hide(); $('#member-#{membership.id}-roles-form').show(); return false;",:class => 'icon icon-edit')
+              = delete_link({:controller => 'groups', :action => 'destroy_membership', :id => @group, :membership_id => membership}, :remote => true, :method => :post)
+        - reset_cycle
+  - else
+    %p.nodata= l(:label_no_data)
+
+.splitcontentright
+  - if projects.any?
+    %fieldset
+      %legend=l(:label_project_new)
+      = form_for(:membership, :remote => true, :url => { :action => 'edit_membership', :id => @group }) do
+        = label_tag "membership_project_id", l(:description_choose_project), :class => "hidden-for-sighted"
+        = select_tag 'membership[project_id]', options_for_membership_project_select(@group, projects)
+        %p
+          = l(:label_role_plural)
+          = ":"
+          - roles.each do |role|
+            %label
+              = check_box_tag 'membership[role_ids][]', role.id
+              =h role
+        %p
+          = submit_tag l(:button_add)

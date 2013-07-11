@@ -5,15 +5,7 @@
   %p
     = t(:label_project_plural)
     = hidden_field_tag 'user_to', @user.id
-    %select{:id => 'user_from', :name => 'user_from', :class => "small"}
-      %option
-      - User.active.all(:order => "lastname, firstname").each do |user|
-        - if @user == user
-          %option{:value => user.id, :selected => "selected"}
-            = user.name
-        - else
-          %option{:value => user.id}
-            = user.name
+    = select_tag("user_from", principals_options_for_select(Principal.active, @user), :prompt => t(:prompt_please_select))
     = submit_tag l(:button_copy), :class => "small", :name => nil
 
 .splitcontentleft
@@ -23,7 +15,7 @@
         %tr
           %th= l(:label_project)
           %th= l(:label_role_plural)
-          %th{:style=>"width:15%"}
+          %th{:style=>"width:15%"}= link_to l(:label_delete), controller: :copy_projects, action: :clear_all, id: @user
           = call_hook(:view_users_memberships_table_header, :user => @user )
       %tbody
         - @user.memberships.each do |membership|
