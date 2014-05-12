@@ -8,9 +8,12 @@ class CopyProjectsController < ApplicationController
   def run
     Member.transaction do
       @user_from.memberships.each do |m|
-        member = Member.new(:principal => @user, :project => m.project)
-        member.roles << m.roles
-        member.save
+        begin
+          member = Member.new(:principal => @user, :project => m.project)
+          member.roles << m.roles
+          member.save
+        rescue
+        end
       end
     end
     redirect_to action: 'edit', controller: @user.class.to_s.underscore.pluralize, id: @user, tab: 'memberships'
